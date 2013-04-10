@@ -5,25 +5,29 @@ import math
 import matplotlib.pyplot as pyplot
 
 n = 1024
-#deltat = 0.01
 deltat = 1.0/n
-#n = 4096
-#deltat = 1.0
 amplitude = 1.0
 
 t = numpy.arange(n) * deltat
 sinewave = amplitude * numpy.sin(t * 2.0 * math.pi / n / deltat)
 
-#pyplot.plot(t, sinewave)
-#pyplot.show()
+sinewave_fft = numpy.fft.fft(sinewave)
+sinewave_fft2 = numpy.append(sinewave_fft[n/2:], sinewave_fft[:n/2])
+freq = numpy.arange(-n/2, n/2) / deltat / n
+sinewave_fft_absrmsnormalized = numpy.abs(sinewave_fft2) / n
 
-sinewave_fft = numpy.fft.rfft(sinewave)
-freq = numpy.arange(n/2 + 1) / deltat / n
+pyplot.figure(1, figsize=(6.0, 7.0))
 
-sinewave_fft_absrmsnormalized = numpy.abs(sinewave_fft) / n * math.sqrt(2.0)
+pyplot.subplot(211)
+pyplot.plot(t, sinewave)
+pyplot.xlabel("Time [s]")
+pyplot.ylabel("Signal [arb]")
+pyplot.subplots_adjust(hspace = 0.8)
 
-print sinewave_fft_absrmsnormalized
-print freq
+pyplot.subplot(212)
+pyplot.plot(freq[n/2-10:n/2+10], sinewave_fft_absrmsnormalized[n/2-10:n/2+10])
+pyplot.xlabel("Frequency [Hz]")
+pyplot.ylabel("Power spectrum [arb]")
 
-#pyplot.plot(freq, numpy.abs(sinewave_fft_absrmsnormalized))
+pyplot.savefig("q1.png")
 #pyplot.show()
