@@ -1,0 +1,51 @@
+\documentclass[12pt]{article}
+\setlength{\topmargin}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in}
+\setlength{\textheight}{8.7in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\parindent}{0.15in}
+\setlength{\parskip}{0.10in}
+
+\usepackage{graphicx}
+
+
+\begin{document}
+
+\title{PHYS386: HW1}
+\author{Miles Wu}
+\maketitle
+
+\section{Q1}
+We chose a discrete time of $\Delta t = 1/1024~\textnormal{sec}$. The FFT (we have taken the absolute value of the complex values) has only two non-zero points at $f = \pm 1~\textnormal{Hz}$. This is because the FFT cannot tell the difference between a wave travelling in the positive direction or one travelling in the negative direction, so the FFT values are mirrored about $f=0$. The amplitude is also $0.5$ because the amplitude of the sine wave was $1$ and half is assigned to each peak. To get the $V_{RMS}$ we would need to square these values, add the two peaks together and then square root again (in other words $\sqrt{0.5^2+0.5^2} = 1/\sqrt{2}$.
+
+\begin{center}
+\includegraphics[width=3.5in]{q1.png}
+\end{center}
+
+\section{Q2}
+
+\section{Q3}
+Although it is a little hard to see any patterns between the two channels due to the offsets between the levels, it seems like there is some correlation between the two channels.
+EXPLAIN
+\begin{center}
+\includegraphics[width=4.5in]{q3a.png}
+\end{center}
+\begin{center}
+\includegraphics[width=4.5in]{q3b.png}\\
+Green is channel 2, blue is channel 1 
+\end{center}
+
+
+\section{Q4}
+Here we used a Hanning windowing function and averaged the FFT spectrums from region where the scan flag mask was set to good (the regions were truncated to a power of 2 to make our lives easier). We also plotted linear power spectral density (units of $\textnormal{W}/\sqrt{\textnormal{Hz}}$).
+
+For the cross spectrum between channel 1 and channel 2, we again plotted the linear power density (units of $\textnormal{W}/\sqrt{\textnormal{Hz}}$). However, for the phase plot we did not do the square root as this would halve all the complex arguments.
+\begin{center}
+\includegraphics[width=4.5in]{q4.png}
+\end{center}
+
+
+\end{document}
