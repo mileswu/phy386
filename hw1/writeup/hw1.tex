@@ -10,6 +10,7 @@
 \setlength{\parskip}{0.10in}
 
 \usepackage{graphicx}
+\usepackage{listings}
 
 
 \begin{document}
@@ -26,10 +27,15 @@ We chose a discrete time of $\Delta t = 1/1024~\textnormal{sec}$. The FFT (we ha
 \end{center}
 
 \section{Q2}
+We generated a random complex power spectrum ($N=1024$ and $\Delta T = 1~\textnormal{s}$) using two normal distributions with mean zero and variance one (making sure the $f=0$ bin is zero). This was then band-limited using an RC filter with $\tau = 5$ to avoid frequencies near the Nyquist frequency. This was then inverse FFT'd to obtain the time stream and then we compute the autocorrelation function. The integral of the filtered power spectrum was $0.000104~\textnormal{W}^2$ and the integral of the autocorrelation function was also $0.000104~\textnormal{W}^2$.
+
+\begin{center}
+\includegraphics[width=5.7in]{q2.png}
+\end{center}
 
 \section{Q3}
-Although it is a little hard to see any patterns between the two channels due to the offsets between the levels, it seems like there is some correlation between the two channels.
-EXPLAIN
+Although it is a little hard to see any patterns between the two channels due to the offsets between the levels, it seems like there is a lot of correlation between the two channels (in that both follow the same downward trend). Since it appears in two channels in the same way, it can't be the CMB signal nor can it be noise from the detector electronics (as we assume the electronics for each channel are independent). Instead we presume that it is thermal emissions noise from the atmosphere that affects all the channels in the same way at the same time.
+
 \begin{center}
 \includegraphics[width=4.5in]{q3a.png}
 \end{center}
@@ -46,6 +52,15 @@ For the cross spectrum between channel 1 and channel 2, we again plotted the lin
 \begin{center}
 \includegraphics[width=4.5in]{q4.png}
 \end{center}
+
+\section{Source Code}
+\subsection{Q1}
+\lstinputlisting[language=Python]{../q1.py}
+\subsection{Q2}
+\lstinputlisting[language=Python]{../q2.py}
+\subsection{Q3/4}
+\lstinputlisting[language=Python]{../q3.py}
+
 
 
 \end{document}
