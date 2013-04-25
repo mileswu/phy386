@@ -1,0 +1,103 @@
+\documentclass[12pt]{article}
+\setlength{\topmargin}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in}
+\setlength{\textheight}{8.7in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\parindent}{0.15in}
+\setlength{\parskip}{0.10in}
+
+\usepackage{graphicx}
+\usepackage{listings}
+
+
+\begin{document}
+
+\title{PHYS386}
+\author{Miles Wu}
+\maketitle
+
+\section{HW2}
+Running our analysis over all 394 channels is incredibly slow on my laptop, so for this homework we have only selected 16 channels to do our analysis with (channel 0 to 19, excluding channel 0/8/9/10).
+
+\subsection{Removing drift and offset}
+In general we wish to perform some more sophisticated data analysis, but in order to do this we need to calculate the covariance between all our channels.
+However, all our channels have a very slow drift (much slower than the frequency of the signals we are looking at) and they also have differing DC power offsets (the average of a channel is not zero) and these would screw up the cross-correlation.
+
+To correct for this, for each channel separately, we fit a quadratic line to the data (though only to regions of data where the scan flag is telling us it is `good' data) and subtract the fitted line from the data.
+This removes both the drift and the offset.
+To illustrate this, the following shows before and after the polynomial subtraction for two channels:
+
+\begin{center}
+\includegraphics[width=5.5in]{polynomial.png}
+\end{center}
+
+\subsection{Atmospheric noise}
+Looking more closely at these two channels after the polynomial subtraction and we notice that there is still this large oscillation (both in amplitude and wavelength) affecting both channels at the same time.
+If we plot channel 1 against channel 2 in a scatter plot we can also see that they are highly correlated due to this large oscillation.
+Since it is affecting all the channels at once we presume that it must atmospheric noise and not signal and seek to remove it.
+
+\begin{center}
+\includegraphics[width=5.5in]{corr.png}
+\includegraphics[width=5.5in]{corr2.png}
+\end{center}
+
+\subsection{PCA Eigen decomposition} 
+We now wish to use principal component analysis to find the component causing the largest variance in the data (which we believe to be atmospheric noise) and subtract it off.
+We now must calculate the covariance matrix for the data (making sure to ignore the `bad' data).
+This is the step that can take a long time and why we have restricted ourselves to only looking at 16 channels.
+The matrix is defined as: $\Sigma_{ij} = (1/N) \sum_t X_i(t) X_j(t)$, where $X_i(t)$ are the polynomial-corrected data points.
+
+We next compute the eigenvectors and eigenvalues (sorted in descending order) of the covariance matrix.
+The size of the eigenvalues are plotted:
+
+\begin{center}
+\includegraphics[width=5.5in]{eigenvalues.png}
+\end{center}
+
+The first eigenvector is also:
+\begin{verbatim}
+[ 0.25431672  0.25242372  0.29449268  0.24868638  0.20695637  0.18889286
+  0.21485291  0.24858192  0.24149037  0.28629137  0.26372864  0.28630798
+  0.25224214  0.20761855  0.26133553  0.26407386]
+\end{verbatim}
+Just from looking at it, this is approximately a normalised (1,1...1) vector, confirming that the largest variance (the atmospheric noise) indeed causes all the channels to move in unison.
+
+\subsection{Subtracting off eigencomponents}
+We can now simply subtract off any component of the data that lies along unwanted eigenvectors.
+For each time point, we project the data onto the unwanted eigenvector, $v$, and subtract it off: $\vec{X}'(t) = \vec{X}(t) - (\vec{X}(t)\cdot\vec{v}) \hat{\vec{v}}$.
+
+Looking at the eigenvalues, we wish to subtract off the first five components as these correspond to 99.5\% of the variance.
+After doing this we see that the large oscillation that was affecting all the channels is no longer there, but we still retain very good sensitivity to high frequency signals as they are still present:
+
+\begin{center}
+\includegraphics[width=5.5in]{corr3.png}
+\end{center}
+
+The scatter plot also shows that channel 1 and 2 are no longer correlated:
+\begin{center}
+\includegraphics[width=5.5in]{corr4.png}
+\end{center}
+
+\subsection{Power spectrum}
+Now that we have removed the large atmospheric noise, we proceed to calculate the power spectral density in exactly the same way as last week's homework using these new corrected data points.
+Both the uncorrected and corrected power spectral densities are plotted:
+
+\begin{center}
+\includegraphics[width=5.5in]{psd.png}
+\end{center}
+
+Comparing the corrected spectra with the atmospheric noise removed with the original spectra show us that the atmospheric noise at around $0.1~\textnormal{Hz}$ has been reduced by anywhere from 3x to 10x.
+In the mean time at high frequency (above 10 Hz) we have only lost sensitivity by less than a factor of two.
+Therefore overall our signal over background ratio has gone up by significantly.
+
+Curiously there is a new peak or bump that appears at around 9 Hz that stands out very prominently from the background noise floor. Although it could be a signal of some kind it is also possible that it is some artefact of the data processing. We were not sure what to make of this, but perhaps it is worth investigating.
+
+\section{Source Code}
+\lstinputlisting[language=Python]{../hw2.py}
+
+
+
+\end{document}
