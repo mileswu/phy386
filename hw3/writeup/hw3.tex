@@ -1,0 +1,95 @@
+\documentclass[12pt]{article}
+\setlength{\topmargin}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in}
+\setlength{\textheight}{8.7in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\parindent}{0.15in}
+\setlength{\parskip}{0.10in}
+
+\usepackage{graphicx}
+\usepackage{listings}
+
+
+\begin{document}
+
+\title{PHYS386: HW3}
+\author{Miles Wu}
+\maketitle
+
+\section{Q1}
+For each pixel in the image, we fit a linear line to the 88 reads and the slope of this line represents the current on that pixel.
+To get an idea of the distribution of these slopes, we next make a histogram plot of the slopes:
+
+\begin{center}
+\includegraphics[width=4in]{hw3-q0-hist.png}
+\end{center}
+
+Most of the pixels are centered around a very small band at around $-0.5$, but there is a very long tail on the positive side.
+This long tail is because of hot pixels that can have very large slopes.
+
+We next plot the dark current for the first $512 \times 512$ pixels in the first quadrant, using $-1$ to $0$ as the range for our colour scale.
+This range was manually specified so that we can see the dark current signal without the hot pixels throwing our range way off; the hot pixels are simply clipped in the image.
+
+\begin{center}
+\includegraphics[width=4.5in]{hw3-q0-darkcurrent.png}
+\end{center}
+
+\section{Q2}
+We wish to next plot the power spectrum of the first quadrant, but the hot pixels might throw this calculation off.
+We define a hot pixel to be one that has a slope greater than $0$ or one that has one less than $-1$.
+For each hot pixel we replace its value with the median of the 10 pixels on either side of it in the row.
+This removes the hot pixel's value without introducing a sudden discontinuity (which would happen if we replaced it with a global mean value or similar).
+We chose to take the median, as the median wouldn't be as affected as a mean by hot pixel values, and we looked at 20 pixels just in case the immediate neighbour pixels are also hot.
+\begin{center}
+\includegraphics[width=4.5in]{hw3-q0-darkcurrent-filtered.png}
+\end{center}
+
+There is actually a gap of 12 timesteps between each row of the data, so we add in 12 zeros to the end of each row.
+We next use a Hanning function on the data and do an FFT.
+After normalizing and taking the absolute value, we plot this:
+\begin{center}
+\includegraphics[width=4in]{hw3-q0-ps.png}
+\end{center}
+
+There are large spikes at multiples of $512$ (e.g. 512, 1024, 1536 etc.).
+This is because of the 12 zeros we added that introduce a signal that has period $512$.
+We can simply ignore this artefact.
+
+\section{Q3}
+If we look at dark current of the second quadrant (flipped as it is readout backwards) we see there is a large amount of correlation between it and the first quadrant.
+
+\begin{center}
+\includegraphics[width=4.5in]{hw3-q1-darkcurrent-filtered.png}
+\end{center}
+
+To confirm this we plot the power cross-spectrum of quadrant 1 and quadrant 2:
+\begin{center}
+\includegraphics[width=4in]{hw3-q0q1-ps.png}
+\end{center}
+
+As we can see, it is very similar to the power spectrum of quadrant 1, indicating there is a lot of commonality between the two.
+To remove this common noise that is in both quadrants we can again use PCA.
+We find the two eigenvalues to be $0.3067$ and $0.00417$ and the primary eigenvector to be $(0.748, 0.663)$.
+This is fairly close to the normalized diagonal vector $(1/\sqrt{2}, 1/\sqrt{2})$ which tells us that the largest variance is caused by the noise that affects both channels at once in roughly the same way.
+
+To remove the noise, we subtract off the component of the data that lies along this eigenvector.
+If we look at both the dark current and the power spectrum of the first quadrant again we find the $1/f$ noise is greatly reduced by approximately a factor of $10\times$.
+
+\begin{center}
+\includegraphics[width=4.5in]{hw3-q0-darkcurrent-filtered-subtracted.png}
+\end{center}
+
+\begin{center}
+\includegraphics[width=4in]{hw3-q0-ps-filtered-subtracted.png}
+\end{center}
+
+
+\section{Source Code}
+\lstinputlisting[language=Python,breaklines=true]{../hw3.py}
+
+
+
+\end{document}
