@@ -1,0 +1,69 @@
+\documentclass[12pt]{article}
+\setlength{\topmargin}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in}
+\setlength{\textheight}{8.7in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\parindent}{0.15in}
+\setlength{\parskip}{0.10in}
+
+\usepackage{graphicx}
+\usepackage{listings}
+
+
+\begin{document}
+
+\title{PHYS386: HW5}
+\author{Miles Wu}
+\maketitle
+
+\section{Removing hot areas}
+First we open up the FITS file and zoom in on the central 2048-by-2048 square as this avoids having to deal with the non-square edges and this is also a power of 2 to make the FFTs easier.
+In the file we have three maps, one of the data, one of the noise and one for the FFT weights.
+
+Looking at a histogram of values in the data array, we find that although most of points follow some kind of Gaussian distribution, there is a long high value tail.
+These are either hot pixels or solar sources that we wish to remove since they are not from the CMB and will throw off our power spectra.
+If we look at the map as an image with the color scale going from 0.0025 to 0.001, we can see these very 'hot' areas.
+
+\begin{center}
+\includegraphics[width=4in]{hw5-hist.png}
+\end{center}
+\begin{center}
+\includegraphics[width=5in]{hw5-signal2.png}
+\end{center}
+
+To remove these we find the hottest pixel and check to see if it is above our 0.0025 threshold.
+If it is we replace the pixels within a circle of radius 8 by the median pixel value of those within a circle of radius 24 (excluding the points inside the inner circle), and this removes that hot spot.
+We continue to repeat this until there are no longer any pixels that are above our 0.0025 threshold.
+By doing this we remove 41 hot spots.
+Plotting the histogram again, and we see the tail is gone.
+
+\begin{center}
+\includegraphics[width=4in]{hw5-hist2.png}
+\end{center}
+
+\section{Multipole spectrum}
+We are now ready to compute the spectrum.
+First of all we apply a Hanning window (made two dimensional by taking the outer product) to the data and the noise and take the 2D FFT of both.
+We then subtract off the power spectrum of the noise from the power spectrum of the data, hopefully leaving us with a better power spectrum of just the signal.
+
+For each value in the 2D FFT array we first work out which multipole it belongs to, by looking at the distance of the point from the origin, and then we add that value to the point on the spectrum at that specific multipole.
+For the weighted spectrum, we additionally divide this value by the FFT weight for that point (if the FFT weight is zero we skip the point).
+Finally, we also keep track of how many values are added to each point on the spectrum, so that at the end we may divide by this number to obtain an average.
+
+\begin{center}
+\includegraphics[width=5in]{hw5-spec.png}
+\end{center}
+
+The method of iterating through each pixel and working out which multipole point it belongs to is considerably faster than the one suggested in class (which was iterating through each multipole point and finding which pixels belong to it), as we find it runs several times faster.
+This is probably because sequential access for the array is a lot faster as it can fit in the cache of the processor.
+
+
+\section{Source Code}
+\lstinputlisting[language=Python,breaklines=true]{../hw5.py}
+
+
+
+\end{document}

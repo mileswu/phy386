@@ -1,0 +1,140 @@
+\documentclass[12pt]{article}
+\setlength{\topmargin}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in}
+\setlength{\textheight}{8.7in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\parindent}{0.15in}
+\setlength{\parskip}{0.10in}
+
+\usepackage{graphicx}
+\usepackage{listings}
+
+
+\begin{document}
+
+\title{PHYS386: HW4}
+\author{Miles Wu}
+\maketitle
+
+\section{Q1}
+We used exactly the same technique as HW3 to process the third quadrant and remove the $1/f$ noise with a couple of changes:
+\begin{itemize}
+\item Instead of using PCA, we just did the simpler solution of subtracting off the second quadrant from the third quadrant (remembering to flip one of them as the readout order is inverted). This was done to be faster and because we know that the first eigenvector was roughly the unit diagonal (implying the variance is common to both streams), making this solution essentially the same.
+\item The range of slopes is also slightly different for this file necessitating that we change our definition of hot pixels. We know consider a hot pixel to be anything outside of $-1$ to $1$.
+\end{itemize}
+
+After doing this processing we get the following image:
+\begin{center}
+\includegraphics[width=7in]{hw4-image.png}
+\end{center}
+We can see a number of vertical bright streaks which we presume are spectra of galaxies.
+
+\section{Q2}
+We first need to isolate these spectra and we do this by making a plot of the luminosity of each column (this is just the average of the pixels in the column):
+\begin{center}
+\includegraphics[width=4in]{hw4-lumi.png}
+\end{center}
+
+In this we noticed that there was a large regular jump up and down that occurred from column to column.
+To attempt to correct this we take the difference in the luminosity from each column to the next column and average it.
+This is how much the pixel values jump by going from column to column.
+For even columns we add this average divided by two, and for odd columns we subtract this average divided by two.
+In an equation this is:
+\begin{eqnarray}
+	x_{i,j}' &=& x_{i,j} \pm \frac{1}{2 N_j} \sum_j | \sum_i \frac{x_{i,j+1} - x_{i,j}}{N_i} |
+\end{eqnarray}
+Plotting the column luminosity again, we find that the very high frequency jumping seems to be eliminated, resulting in a cleaner graph:
+\begin{center}
+\includegraphics[width=4in]{hw4-lumi-corrected.png}
+\end{center}
+
+The next problem is that the streaks in the image are not exactly vertical so we need to rotate the image.
+Before rotating the image we must find out by what angle to rotate by.
+We do this by taking a FFT of all the rows of the image (with a Hanning function), dividing the $i$th row by the $i+1$th row and summing all these complex ratios for each frequency to obtain $r$:
+\begin{eqnarray}
+	r_j &=& \sum_i \frac{X_{i,j}}{X_{i+1,j}} , 
+\end{eqnarray}
+where $X$ is the FFT.
+Once we plot the phase of all of these summed complex ratios, we next must obtain the slope of this line, as it represents the angle by which we need to rotate the image.
+Since the phase becomes very jumpy after 130 in a row's frequency space, we only fit the line to the first 130 points.
+For the least-squared fit, we also weight each data point by the sum of the absolute value squared of all the FFT values for that given frequency:
+\begin{eqnarray}
+	w_j &=& \sum_i |X_{i,j}|^2.
+\end{eqnarray}
+
+Looking at the following plot and fit, we find the angle of rotation needed to be: $-0.000076$ (this is the number of horizontal pixels we need to rotate the image by per vertical pixel)
+\begin{center}
+\includegraphics[width=4in]{hw4-rotation-fit.png}
+\end{center}
+
+To rotate the image we take the FFT of all the rows of the image again (this time with no Hanning function) and multiply each frequency of each row by a phase factor:
+\begin{eqnarray}
+	X_{i,j}' &=& X_{i,j} e^{-\sqrt{-1} m \frac{i - N_i}{2} j}
+\end{eqnarray}
+where $m$ was the slope we found earlier.
+Then we simply do an inverse FFT to obtain the rotated image (left is original and right is rotated):
+\begin{center}
+\includegraphics[width=7in]{hw4-image-rotation.png}
+\end{center}
+
+The lines in the image are now straight and as a result the peaks in the luminosity are now much sharper:
+\begin{center}
+\includegraphics[width=4in]{hw4-lumi-rotated.png}
+\end{center}
+
+We arbitrarily choose the spectrum in column 257 of the image to focus on as it is reasonably bright.
+Since the spectrum is present in multiple columns centred around column 257, we take a weighted average of these columns to reduce the noise.
+In particular, we noted from the luminosity plot earlier that the spectrum seems to only be present across six columns so we used a Kaiser window function for $N=6$ with $\beta = 3$ to do the weighting.
+The spectrum is very noisy so we next convolve it with another Kaiser window function (this time $N=40$ and $\beta = 8$) to smooth it and we find:
+\begin{center}
+\includegraphics[width=7in]{hw4-spectrum.png}
+\end{center}
+
+\section{Q3}
+We first loaded up the four template spectra from the file provided and took the logarithm of the frequency axis and flipped it horizontally to make it correspond with our diffraction spectra.
+We next loaded these templates into an linear interpolation function, so that if we ask for a value in between two data points it'll take the weighted average and return that to us.  
+This is necessary so that we can perform least squares fitting, as the data and the templates will not have  points at the same intervals.
+Next we define a new function:
+\begin{eqnarray}
+t(f)' &=& A~t(\frac{f}{1+z} + c_1) + c_2,
+\end{eqnarray}
+where $t(f)$ was the original linear interpolation function.
+For most of the templates, $A \approx 0.2$, $z \approx 800$, $c1 \approx 31.64$ and $c2 \approx 0$ were good zero-th order guesses and matched very roughly:
+The result of this for all four templates is plotted:
+\begin{center}
+\includegraphics[width=7in]{hw4-spectrum-unfit.png}
+\end{center}
+
+We now use a curve fitting function from SciPy (it uses the Levenberg-Marquadt algorithm) which attempts to tweak the values of $A$, $z$, $c_1$ and $c_2$ to best minimise the squared residuals between the data and the template.
+The result of this for all four templates is plotted:
+\begin{center}
+\includegraphics[width=7in]{hw4-spectrum-fit.png}
+\end{center}
+
+By eye we can see that `1068` does not fit very well at all and we can exclude this one, but it is a little more tricky to decide which of the remaining three it is most likely to be.
+Rather than eyeballing thing, we instead opt for a more quantitative approach.
+For each template fit, we calculate the sum of the squared residuals:
+\begin{eqnarray}
+	R &=& \sum_i (t(f_i) - x_i)^2
+\end{eqnarray}
+Looking at the following table, it is clear that the spectrum in column 257 is most likely to be a similar type to the ngc6946 galaxy:
+\begin{center}
+\begin{tabular}{ l c }
+Name & Residual \\
+\hline
+ 1068 & 147.4 \\
+  m82 & 112.2 \\
+  orp22 & 95.1 \\
+  ngc6946 & 84.8
+\end{tabular}
+\end{center}
+
+\section{Source Code}
+\lstinputlisting[language=Python,breaklines=true]{../hw4.py}
+
+
+
+\end{document}
